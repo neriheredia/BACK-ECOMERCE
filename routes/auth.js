@@ -24,26 +24,31 @@ router.post('/register', async (req, res) => {
 //LOGIN
 router.post('/login', async (req, res) => {
     try {
-        const user = await User.findOne({ username: req.body.username })
-        !user && res.status(401).json('Wrong credentials')
+        //VALIDAR EMAIL
+        const userDb = await Admin.findOne({
+            email: req.body.email,
+        });
 
-        const hashedPassword = CryptoJS.AES.decrypt(user.password, process.env.PASS_SEC)
-        const OriginalPassword = hashedPassword.toString(CryptoJS.enc.Utf8)
-
-        OriginalPassword !== req.body.password &&
-            res.status(401).json('Wrong credentials')
+        //DESENCRIPTAR PASSWORD
+        const bytes = CryptoJS.AES.decrypt(userDb.password, process.env.PASSWORD_KEY);
+        const passwordDecrypt = bytes.toString(CryptoJS.enc.Utf8);
 
 
+        //CREATOR TOKEN JWT
         const accessToken = jwt.sign({
-            id: user._id,
-            isAdmin: user.isAdmin,
-        }, process.env.JWT_SEC,
-            { expiresIn: '3d' }
-        )
-        const { password, ...others } = user._doc
-        res.status(200).json({ ...others, accessToken })
-    } catch (err) {
-        res.status(500).json(err)
+            id: userDb._id,
+            isAdmin: userDb.isAdmin
+        }, process.env.JWT_KEY,
+            { expiresIn: '5d' })
+
+        //RECUPERANDO USER 
+        const { password, ...others } = userDb._doc;
+
+        //CONCAT DATA BASE OBJECT AND ACCESSTOKEN
+        !userDb || passwordDecrypt !== req.body.password ? res.status(401).json(`${req.body.email} or ${req.body.password} are wrong`) :
+            res.status(200).json({ ...others, accessToken });
+    } catch (error) {
+        res.status(401).json(error);
     }
 })
 
