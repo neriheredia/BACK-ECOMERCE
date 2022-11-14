@@ -18,7 +18,9 @@ mongoose.connect(process.env.MONGO_URL)
     .then(() => { console.log('Mongo DB Conected') })
     .catch((err) => { console.log(err) })
 
-app.use(cors())
+app.use(cors({
+    origin: '*',
+}))
 //Para que express reconozca todos los datos en json
 app.use(express.json())
 //Instaciando rutas de la api para hacer los pedidos
